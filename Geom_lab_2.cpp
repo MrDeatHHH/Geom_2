@@ -73,7 +73,15 @@ int* fancyColor(int dx, int dy, int max)
 	return color;
 }
 
-int** run(const int height, const int width, const int sizeX, const int sizeY, double** q, double** g)
+int* notfancyColor(int dx, int dy, int max)
+{
+	int* color = new int[3];
+	for (int i = 0; i < 3; ++i)
+		color[i] = int(255 * double(dx + dy) / double(max));
+	return color;
+}
+
+int** run(const int height, const int width, const int sizeX, const int sizeY, int** q, double** g)
 {
 	// Initialize phi, L, R, U, D
 	const int modT = height * width;
@@ -106,7 +114,7 @@ int** run(const int height, const int width, const int sizeX, const int sizeY, d
 					if (R_ > maxR)
 						maxR = R_;
 				}
-				R[i_ + j][k] = maxR;
+				R[ij][k] = maxR;
 
 				double maxD = -10000000.;
 				for (int k_ = 0; k_ < modKs; ++k_)
@@ -115,7 +123,7 @@ int** run(const int height, const int width, const int sizeX, const int sizeY, d
 					if (D_ > maxD)
 						maxD = D_;
 				}
-				D[i_ + j][k] = maxD;
+				D[ij][k] = maxD;
 			}
 		}
 	}
@@ -204,7 +212,7 @@ int main()
 	const int Lwidth = Limage.size().width;
 
 	Mat Rimage_, Rimage;
-	Rimage_ = imread("new2r.png", IMREAD_UNCHANGED);
+	Rimage_ = imread("new2l.png", IMREAD_UNCHANGED);
 	//imshow("Original image", image_);
 	cvtColor(Rimage_, Rimage, COLOR_BGR2GRAY);
 	imshow("Gray image", Rimage);
@@ -232,10 +240,10 @@ int main()
 		}
 	}
 
-	const int minDx = -1;
-	const int maxDx = 9;
-	const int minDy = -2;
-	const int maxDy = 2;
+	const int minDx = 0;
+	const int maxDx = 10;
+	const int minDy = 0;
+	const int maxDy = 0;
 
 	const int sizeX = maxDx - minDx + 1;
 	const int sizeY = maxDy - minDy + 1;
@@ -247,16 +255,16 @@ int main()
 	for (int i = 0; i < sizeX * sizeY; ++i)
 	{
 		g[i] = new double [sizeX * sizeY]();
-		for (int j = 0; j < sizeY; ++j)
-			g[i][j] = sqrt(pow((i / sizeX) - (j / sizeX), 2) + pow((i % sizeY) - (j % sizeY), 2));
+		for (int j = 0; j < sizeX * sizeY; ++j)
+			g[i][j] = sqrt(pow((i / sizeY) - (j / sizeY), 2) + pow((i % sizeY) - (j % sizeY), 2));
 	}
 	cout << "G" << endl;
 
 	// Q
-	double** q = new double* [Lheight * Lwidth]();
+	int** q = new int* [Lheight * Lwidth]();
 	for (int i = 0; i < Lheight * Lwidth; ++i)
 	{
-		q[i] = new double [sizeX * sizeY]();
+		q[i] = new int[sizeX * sizeY]();
 		for (int j = 0; j < sizeX * sizeY; ++j)
 			if ((properIndex((i / Lwidth) + (j / sizeY), minDx) <= Rheight - 1) &&
 				(properIndex((i / Lwidth) + (j / sizeY), minDx) >= 0) &&
@@ -269,6 +277,10 @@ int main()
 				q[i][j] = 10000000;
 	}
 	cout << "Q" << endl;
+	int sum = 0;
+	for (int i = 0; i < Lheight * Lwidth; ++i)
+		sum += abs(q[i][0]);
+	cout << "Sum = " << sum << endl;
 
 	int** res = run(Lheight, Lwidth, sizeX, sizeY, q, g);
 	cout << "Rez" << endl;
@@ -279,7 +291,7 @@ int main()
 		for (int i = 0; i < Lheight; ++i)
 			for (int j = 0; j < Lwidth; ++j)
 			{
-				int* color = fancyColor(properIndex(res[i][j] / sizeY, minDx), properIndex(res[i][j] % sizeY, minDy), sizeX + sizeY);
+				int* color = notfancyColor(properIndex(res[i][j] / sizeY, minDx), properIndex(res[i][j] % sizeY, minDy), sizeX + sizeY);
 				result[c].at<uchar>(i, j) = uchar(color[c]);
 				delete[] color;
 			}
