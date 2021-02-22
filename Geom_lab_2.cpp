@@ -73,7 +73,15 @@ int* fancyColor(int dx, int dy, int max)
 	return color;
 }
 
-int** run(const int height, const int width, const int sizeX, const int sizeY, double** q, double** g)
+int* notfancyColor(int dx, int dy, int max)
+{
+	int* color = new int[3];
+	for (int i = 0; i < 3; ++i)
+		color[i] = int(255 * double(dx + dy) / double(max));
+	return color;
+}
+
+int** run(const int height, const int width, const int sizeX, const int sizeY, int** q, double** g)
 {
 	// Initialize phi, L, R, U, D
 	const int modT = height * width;
@@ -99,23 +107,23 @@ int** run(const int height, const int width, const int sizeX, const int sizeY, d
 			const int ij = i_ + j;
 			for (int k = 0; k < modKs; ++k)
 			{
-				double maxR = -10000000.;
+				double minR = 100000.;
 				for (int k_ = 0; k_ < modKs; ++k_)
 				{
 					const double R_ = R[ij + 1][k_] + q[ij + 1][k_] + g[k_][k];
-					if (R_ > maxR)
-						maxR = R_;
+					if (R_ < minR)
+						minR = R_;
 				}
-				R[i_ + j][k] = maxR;
+				R[ij][k] = minR;
 
-				double maxD = -10000000.;
+				double minD = 100000.;
 				for (int k_ = 0; k_ < modKs; ++k_)
 				{
 					const double D_ = D[ij + width][k_] + q[ij + width][k_] + g[k_][k];
-					if (D_ > maxD)
-						maxD = D_;
+					if (D_ < minD)
+						minD = D_;
 				}
-				D[i_ + j][k] = maxD;
+				D[ij][k] = minD;
 			}
 		}
 	}
@@ -129,23 +137,23 @@ int** run(const int height, const int width, const int sizeX, const int sizeY, d
 			const int ij = i_ + j;
 			for (int k = 0; k < modKs; ++k)
 			{
-				double maxL = -10000000.;
+				double minL = 100000.;
 				for (int k_ = 0; k_ < modKs; ++k_)
 				{
 					const double L_ = L[ij - 1][k_] + q[ij - 1][k_] + g[k_][k];
-					if (L_ > maxL)
-						maxL = L_;
+					if (L_ < minL)
+						minL = L_;
 				}
-				L[ij][k] = maxL;
+				L[ij][k] = minL;
 
-				double maxU = -10000000.;
+				double minU = 100000.;
 				for (int k_ = 0; k_ < modKs; ++k_)
 				{
 					const double U_ = U[ij - width][k_] + q[ij - width][k_] + g[k_][k];
-					if (U_ > maxU)
-						maxU = U_;
+					if (U_ < minU)
+						minU = U_;
 				}
-				U[ij][k] = maxU;
+				U[ij][k] = minU;
 			}
 		}
 	}
@@ -164,11 +172,11 @@ int** run(const int height, const int width, const int sizeX, const int sizeY, d
 		{
 			const int ij = i_ + j;
 			int k_star = 0;
-			double value = -10000000.;
+			double value = 100000.;
 			for (int k_ = 0; k_ < modKs; ++k_)
 			{
 				const double v_ = L[ij][k_] + R[ij][k_] + q[ij][k_] + R[ij][k_] + U[ij][k_];
-				if (v_ > value)
+				if (v_ < value)
 				{
 					value = v_;
 					k_star = k_;
@@ -196,7 +204,7 @@ int** run(const int height, const int width, const int sizeX, const int sizeY, d
 int main()
 {
 	Mat Limage_, Limage;
-	Limage_ = imread("new2l.png", IMREAD_UNCHANGED);
+	Limage_ = imread("1.png", IMREAD_UNCHANGED);
 	//imshow("Original image", image_);
 	cvtColor(Limage_, Limage, COLOR_BGR2GRAY);
 	imshow("Gray image", Limage);
@@ -204,7 +212,7 @@ int main()
 	const int Lwidth = Limage.size().width;
 
 	Mat Rimage_, Rimage;
-	Rimage_ = imread("new2r.png", IMREAD_UNCHANGED);
+	Rimage_ = imread("2.png", IMREAD_UNCHANGED);
 	//imshow("Original image", image_);
 	cvtColor(Rimage_, Rimage, COLOR_BGR2GRAY);
 	imshow("Gray image", Rimage);
@@ -232,13 +240,15 @@ int main()
 		}
 	}
 
-	const int minDx = -1;
-	const int maxDx = 9;
-	const int minDy = -2;
-	const int maxDy = 2;
+	const int minDx = -5;
+	const int maxDx = 5;
+	const int minDy = -5;
+	const int maxDy = 5;
 
 	const int sizeX = maxDx - minDx + 1;
 	const int sizeY = maxDy - minDy + 1;
+	const int maxD = abs(abs(minDx) - (abs(minDx) + abs(maxDx)) / 2) + (abs(minDx) + abs(maxDx)) / 2 +
+		             abs(abs(minDy) - (abs(minDy) + abs(maxDy)) / 2) + (abs(minDy) + abs(maxDy)) / 2;
 
 	auto start = high_resolution_clock::now();
 
@@ -247,16 +257,16 @@ int main()
 	for (int i = 0; i < sizeX * sizeY; ++i)
 	{
 		g[i] = new double [sizeX * sizeY]();
-		for (int j = 0; j < sizeY; ++j)
-			g[i][j] = sqrt(pow((i / sizeX) - (j / sizeX), 2) + pow((i % sizeY) - (j % sizeY), 2));
+		for (int j = 0; j < sizeX * sizeY; ++j)
+			g[i][j] = sqrt(pow((i / sizeY) - (j / sizeY), 2) + pow((i % sizeY) - (j % sizeY), 2));
 	}
 	cout << "G" << endl;
 
 	// Q
-	double** q = new double* [Lheight * Lwidth]();
+	int** q = new int* [Lheight * Lwidth]();
 	for (int i = 0; i < Lheight * Lwidth; ++i)
 	{
-		q[i] = new double [sizeX * sizeY]();
+		q[i] = new int[sizeX * sizeY]();
 		for (int j = 0; j < sizeX * sizeY; ++j)
 			if ((properIndex((i / Lwidth) + (j / sizeY), minDx) <= Rheight - 1) &&
 				(properIndex((i / Lwidth) + (j / sizeY), minDx) >= 0) &&
@@ -266,7 +276,7 @@ int main()
 					            Rcolors[properIndex((i / Lwidth) + (j / sizeY), minDx)]
 					                   [properIndex((i % Lwidth) + (j % sizeY), minDy)]);
 			else
-				q[i][j] = 10000000;
+				q[i][j] = 100000;
 	}
 	cout << "Q" << endl;
 
@@ -279,7 +289,9 @@ int main()
 		for (int i = 0; i < Lheight; ++i)
 			for (int j = 0; j < Lwidth; ++j)
 			{
-				int* color = fancyColor(properIndex(res[i][j] / sizeY, minDx), properIndex(res[i][j] % sizeY, minDy), sizeX + sizeY);
+				int* color = fancyColor(properIndex(res[i][j] / sizeY, minDx),
+					                    properIndex(res[i][j] % sizeY, minDy),
+					                    maxD);
 				result[c].at<uchar>(i, j) = uchar(color[c]);
 				delete[] color;
 			}
@@ -300,7 +312,7 @@ int main()
 
 	namedWindow("Result image", WINDOW_AUTOSIZE);
 	imshow("Result image", rez);
-	imwrite("res1.png", rez);
+	imwrite("res.png", rez);
 
 	waitKey(0);
 	return 0;
