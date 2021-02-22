@@ -107,23 +107,23 @@ int** run(const int height, const int width, const int sizeX, const int sizeY, i
 			const int ij = i_ + j;
 			for (int k = 0; k < modKs; ++k)
 			{
-				double maxR = -10000000.;
+				double minR = 100000.;
 				for (int k_ = 0; k_ < modKs; ++k_)
 				{
 					const double R_ = R[ij + 1][k_] + q[ij + 1][k_] + g[k_][k];
-					if (R_ > maxR)
-						maxR = R_;
+					if (R_ < minR)
+						minR = R_;
 				}
-				R[ij][k] = maxR;
+				R[ij][k] = minR;
 
-				double maxD = -10000000.;
+				double minD = 100000.;
 				for (int k_ = 0; k_ < modKs; ++k_)
 				{
 					const double D_ = D[ij + width][k_] + q[ij + width][k_] + g[k_][k];
-					if (D_ > maxD)
-						maxD = D_;
+					if (D_ < minD)
+						minD = D_;
 				}
-				D[ij][k] = maxD;
+				D[ij][k] = minD;
 			}
 		}
 	}
@@ -137,23 +137,23 @@ int** run(const int height, const int width, const int sizeX, const int sizeY, i
 			const int ij = i_ + j;
 			for (int k = 0; k < modKs; ++k)
 			{
-				double maxL = -10000000.;
+				double minL = 100000.;
 				for (int k_ = 0; k_ < modKs; ++k_)
 				{
 					const double L_ = L[ij - 1][k_] + q[ij - 1][k_] + g[k_][k];
-					if (L_ > maxL)
-						maxL = L_;
+					if (L_ < minL)
+						minL = L_;
 				}
-				L[ij][k] = maxL;
+				L[ij][k] = minL;
 
-				double maxU = -10000000.;
+				double minU = 100000.;
 				for (int k_ = 0; k_ < modKs; ++k_)
 				{
 					const double U_ = U[ij - width][k_] + q[ij - width][k_] + g[k_][k];
-					if (U_ > maxU)
-						maxU = U_;
+					if (U_ < minU)
+						minU = U_;
 				}
-				U[ij][k] = maxU;
+				U[ij][k] = minU;
 			}
 		}
 	}
@@ -172,11 +172,11 @@ int** run(const int height, const int width, const int sizeX, const int sizeY, i
 		{
 			const int ij = i_ + j;
 			int k_star = 0;
-			double value = -10000000.;
+			double value = 100000.;
 			for (int k_ = 0; k_ < modKs; ++k_)
 			{
 				const double v_ = L[ij][k_] + R[ij][k_] + q[ij][k_] + R[ij][k_] + U[ij][k_];
-				if (v_ > value)
+				if (v_ < value)
 				{
 					value = v_;
 					k_star = k_;
@@ -204,7 +204,7 @@ int** run(const int height, const int width, const int sizeX, const int sizeY, i
 int main()
 {
 	Mat Limage_, Limage;
-	Limage_ = imread("new2l.png", IMREAD_UNCHANGED);
+	Limage_ = imread("1.png", IMREAD_UNCHANGED);
 	//imshow("Original image", image_);
 	cvtColor(Limage_, Limage, COLOR_BGR2GRAY);
 	imshow("Gray image", Limage);
@@ -212,7 +212,7 @@ int main()
 	const int Lwidth = Limage.size().width;
 
 	Mat Rimage_, Rimage;
-	Rimage_ = imread("new2l.png", IMREAD_UNCHANGED);
+	Rimage_ = imread("2.png", IMREAD_UNCHANGED);
 	//imshow("Original image", image_);
 	cvtColor(Rimage_, Rimage, COLOR_BGR2GRAY);
 	imshow("Gray image", Rimage);
@@ -240,13 +240,15 @@ int main()
 		}
 	}
 
-	const int minDx = 0;
-	const int maxDx = 10;
-	const int minDy = 0;
-	const int maxDy = 0;
+	const int minDx = -5;
+	const int maxDx = 5;
+	const int minDy = -5;
+	const int maxDy = 5;
 
 	const int sizeX = maxDx - minDx + 1;
 	const int sizeY = maxDy - minDy + 1;
+	const int maxD = abs(abs(minDx) - (abs(minDx) + abs(maxDx)) / 2) + (abs(minDx) + abs(maxDx)) / 2 +
+		             abs(abs(minDy) - (abs(minDy) + abs(maxDy)) / 2) + (abs(minDy) + abs(maxDy)) / 2;
 
 	auto start = high_resolution_clock::now();
 
@@ -274,13 +276,9 @@ int main()
 					            Rcolors[properIndex((i / Lwidth) + (j / sizeY), minDx)]
 					                   [properIndex((i % Lwidth) + (j % sizeY), minDy)]);
 			else
-				q[i][j] = 10000000;
+				q[i][j] = 100000;
 	}
 	cout << "Q" << endl;
-	int sum = 0;
-	for (int i = 0; i < Lheight * Lwidth; ++i)
-		sum += abs(q[i][0]);
-	cout << "Sum = " << sum << endl;
 
 	int** res = run(Lheight, Lwidth, sizeX, sizeY, q, g);
 	cout << "Rez" << endl;
@@ -291,7 +289,9 @@ int main()
 		for (int i = 0; i < Lheight; ++i)
 			for (int j = 0; j < Lwidth; ++j)
 			{
-				int* color = notfancyColor(properIndex(res[i][j] / sizeY, minDx), properIndex(res[i][j] % sizeY, minDy), sizeX + sizeY);
+				int* color = fancyColor(properIndex(res[i][j] / sizeY, minDx),
+					                    properIndex(res[i][j] % sizeY, minDy),
+					                    maxD);
 				result[c].at<uchar>(i, j) = uchar(color[c]);
 				delete[] color;
 			}
@@ -312,7 +312,7 @@ int main()
 
 	namedWindow("Result image", WINDOW_AUTOSIZE);
 	imshow("Result image", rez);
-	imwrite("res1.png", rez);
+	imwrite("res.png", rez);
 
 	waitKey(0);
 	return 0;
