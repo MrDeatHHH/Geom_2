@@ -13,11 +13,16 @@ using namespace std::chrono;
 #define PI 3.14159265
 #define inf 10000.
 
-int* fancyColor(int dx, int dy, double max)
+int width;
+int height;
+int sizeX;
+int sizeY;
+
+int* fancyColor(int dx, int dy, float max)
 {
 	int* color = new int[3];
 	int H = 0;
-	double artan = atan(double(dy) / double(dx));
+	float artan = atan(float(dy) / float(dx));
 	if (artan == artan)
 	{
 		H = int(artan * 180.0 / PI);
@@ -69,7 +74,7 @@ int* fancyColor(int dx, int dy, double max)
 	return color;
 }
 
-int* notfancyColor(int dx, int dy, double max)
+int* notfancyColor(int dx, int dy, float max)
 {
 	int* color = new int[3];
 	for (int i = 0; i < 3; ++i)
@@ -77,34 +82,19 @@ int* notfancyColor(int dx, int dy, double max)
 	return color;
 }
 
-int*** run(const int sizeX, const int sizeY, int*** K, const int width, const int height, double**** q, double**** g)
+int get_index(int x, int y, int dx, int dy)
+{
+	return ((x)*height * sizeX * sizeY + (y)*sizeX * sizeY + (dx)*sizeY + (dy));
+}
+
+int*** run(int*** K, float* q, float**** g)
 {
 	// Initialize phi, L, R, U, D
-	double**** L = new double*** [width];
-	double**** R = new double*** [width];
-	double**** U = new double*** [width];
-	double**** D = new double*** [width];
-	for (int x = 0; x < width; ++x)
-	{
-		L[x] = new double** [height]();
-		R[x] = new double** [height]();
-		U[x] = new double** [height]();
-		D[x] = new double** [height]();
-		for (int y = 0; y < height; ++y)
-		{
-			L[x][y] = new double* [sizeX]();
-			R[x][y] = new double* [sizeX]();
-			U[x][y] = new double* [sizeX]();
-			D[x][y] = new double* [sizeX]();
-			for (int dx = 0; dx < sizeX; ++dx)
-			{
-				L[x][y][dx] = new double [sizeY]();
-				R[x][y][dx] = new double [sizeY]();
-				U[x][y][dx] = new double [sizeY]();
-				D[x][y][dx] = new double [sizeY]();
-			}
-		}
-	}
+	float* L = new float[width * height * sizeX * sizeY]();
+	float* R = new float[width * height * sizeX * sizeY]();
+	float* U = new float[width * height * sizeX * sizeY]();
+	float* D = new float[width * height * sizeX * sizeY]();
+
 	cout << "Done Init" << endl;
 
 	// Forward
@@ -116,31 +106,31 @@ int*** run(const int sizeX, const int sizeY, int*** K, const int width, const in
 			{
 				for (int dy1 = 0; dy1 < sizeY; ++dy1)
 				{
-					double maxU = -inf * max(width, height);
-					double currentU = 0;
+					float maxU = -inf * max(width, height);
+					float currentU = 0;
 					for (int dx2 = 0; dx2 < sizeX; ++dx2)
 					{
 						for (int dy2 = 0; dy2 < sizeY; ++dy2)
 						{
-							currentU = U[x][y - 1][dx2][dy2] + q[x][y - 1][dx2][dy2] + g[dx1][dy1][dx2][dy2];
+							currentU = U[get_index(x, y - 1, dx2, dy2)] + q[get_index(x, y - 1, dx2, dy2)] + g[dx1][dy1][dx2][dy2];
 							if (currentU > maxU)
 								maxU = currentU;
 						}
 					}
-					U[x][y][dx1][dy1] = maxU;
+					U[get_index(x, y, dx1, dy1)] = maxU;
 
-					double maxL = -inf * max(width, height);
-					double currentL = 0;
+					float maxL = -inf * max(width, height);
+					float currentL = 0;
 					for (int dx2 = 0; dx2 < sizeX; ++dx2)
 					{
 						for (int dy2 = 0; dy2 < sizeY; ++dy2)
 						{
-							currentL = L[x - 1][y][dx2][dy2] + q[x - 1][y][dx2][dy2] + g[dx1][dy1][dx2][dy2];
+							currentL = L[get_index(x - 1, y, dx2, dy2)] + q[get_index(x - 1, y, dx2, dy2)] + g[dx1][dy1][dx2][dy2];
 							if (currentL > maxL)
 								maxL = currentL;
 						}
 					}
-					L[x][y][dx1][dy1] = maxL;
+					L[get_index(x, y, dx1, dy1)] = maxL;
 				}
 			}
 		}
@@ -156,31 +146,31 @@ int*** run(const int sizeX, const int sizeY, int*** K, const int width, const in
 			{
 				for (int dy1 = 0; dy1 < sizeY; ++dy1)
 				{
-					double maxD = -inf * max(width, height);
-					double currentD = 0;
+					float maxD = -inf * max(width, height);
+					float currentD = 0;
 					for (int dx2 = 0; dx2 < sizeX; ++dx2)
 					{
 						for (int dy2 = 0; dy2 < sizeY; ++dy2)
 						{
-							currentD = D[x][y + 1][dx2][dy2] + q[x][y + 1][dx2][dy2] + g[dx1][dy1][dx2][dy2];
+							currentD = D[get_index(x, y + 1, dx2, dy2)] + q[get_index(x, y + 1, dx2, dy2)] + g[dx1][dy1][dx2][dy2];
 							if (currentD > maxD)
 								maxD = currentD;
 						}
 					}
-					D[x][y][dx1][dy1] = maxD;
+					D[get_index(x, y, dx1, dy1)] = maxD;
 
-					double maxR = -inf * max(width, height);
-					double currentR = 0;
+					float maxR = -inf * max(width, height);
+					float currentR = 0;
 					for (int dx2 = 0; dx2 < sizeX; ++dx2)
 					{
 						for (int dy2 = 0; dy2 < sizeY; ++dy2)
 						{
-							currentR = R[x + 1][y][dx2][dy2] + q[x + 1][y][dx2][dy2] + g[dx1][dy1][dx2][dy2];
+							currentR = R[get_index(x + 1, y, dx2, dy2)] + q[get_index(x + 1, y, dx2, dy2)] + g[dx1][dy1][dx2][dy2];
 							if (currentR > maxR)
 								maxR = currentR;
 						}
 					}
-					R[x][y][dx1][dy1] = maxR;
+					R[get_index(x, y, dx1, dy1)] = maxR;
 				}
 			}
 		}
@@ -197,17 +187,17 @@ int*** run(const int sizeX, const int sizeY, int*** K, const int width, const in
 			res[x][y] = new int[2];
 			int best_dx = -1;
 			int best_dy = -1;
-			double result = -inf * max(width, height) * 4;
-			double current = 0;
+			float result = -inf * max(width, height) * 4;
+			float current = 0;
 			for (int dx = 0; dx < sizeX; ++dx)
 			{
 				for (int dy = 0; dy < sizeY; ++dy)
 				{
-					current = L[x][y][dx][dy] +
-						R[x][y][dx][dy] +
-						U[x][y][dx][dy] +
-						D[x][y][dx][dy] +
-						q[x][y][dx][dy];
+					current = L[get_index(x, y, dx, dy)] +
+						R[get_index(x, y, dx, dy)] +
+						U[get_index(x, y, dx, dy)] +
+						D[get_index(x, y, dx, dy)] +
+						q[get_index(x, y, dx, dy)];
 					if (current > result)
 					{
 						best_dx = dx;
@@ -221,28 +211,7 @@ int*** run(const int sizeX, const int sizeY, int*** K, const int width, const in
 		}
 	}
 	cout << "Best" << endl;
-	
-	for (int x = 0; x < width; ++x)
-	{
-		for (int y = 0; y < height; ++y)
-		{
-			for (int dx = 0; dx < sizeX; ++dx)
-			{
-				delete[] L[x][y][dx];
-				delete[] R[x][y][dx];
-				delete[] U[x][y][dx];
-				delete[] D[x][y][dx];
-			}
-			delete[] L[x][y];
-			delete[] R[x][y];
-			delete[] U[x][y];
-			delete[] D[x][y];
-		}
-		delete[] L[x];
-		delete[] R[x];
-		delete[] U[x];
-		delete[] D[x];
-	}
+
 	delete[] L;
 	delete[] R;
 	delete[] U;
@@ -254,25 +223,25 @@ int*** run(const int sizeX, const int sizeY, int*** K, const int width, const in
 int main()
 {
 	Mat Limage_, Limage;
-	Limage_ = imread("sofal.png", IMREAD_UNCHANGED);
+	Limage_ = imread("view0.png", IMREAD_UNCHANGED);
 	cvtColor(Limage_, Limage, COLOR_BGR2GRAY);
 	//imshow("Gray image L", Limage);
 
 	Mat Rimage_, Rimage;
-	Rimage_ = imread("sofar.png", IMREAD_UNCHANGED);
+	Rimage_ = imread("view1.png", IMREAD_UNCHANGED);
 	cvtColor(Rimage_, Rimage, COLOR_BGR2GRAY);
 	//imshow("Gray image R", Rimage);
 
 	auto start = high_resolution_clock::now();
 
-	const int height = Limage.size().height;
-	const int width = Limage.size().width;
+	height = Limage.size().height;
+	width = Limage.size().width;
 
 	// Get array from Mat
 	int** Lcolors = new int* [width];
 	for (int x = 0; x < width; ++x)
 	{
-		Lcolors[x] = new int [height];
+		Lcolors[x] = new int[height];
 		for (int y = 0; y < height; ++y)
 			Lcolors[x][y] = int(Limage.at<uchar>(y, x));
 	}
@@ -286,14 +255,14 @@ int main()
 	}
 	cout << "Read Images" << endl;
 
-	const int minDx = -10;
-	const int maxDx = 10;
-	const int minDy = -5;
-	const int maxDy = 5;
+	const int minDx = -50;
+	const int maxDx = 0;
+	const int minDy = 0;
+	const int maxDy = 0;
 
-	const int sizeX = maxDx - minDx + 1;
-	const int sizeY = maxDy - minDy + 1;
-	const double maxD = sqrt(pow(max(abs(minDx), abs(maxDx)), 2) + pow(max(abs(minDy), abs(maxDy)), 2));
+	sizeX = maxDx - minDx + 1;
+	sizeY = maxDy - minDy + 1;
+	const float maxD = sqrt(pow(max(abs(minDx), abs(maxDx)), 2) + pow(max(abs(minDy), abs(maxDy)), 2));
 
 	int*** K = new int** [sizeX];
 	for (int dx = 0; dx < sizeX; ++dx)
@@ -307,16 +276,13 @@ int main()
 		}
 	}
 
-	double**** q = new double*** [width];
+	float* q = new float[width * height * sizeX * sizeY];
 	for (int x = 0; x < width; ++x)
 	{
-		q[x] = new double** [height];
 		for (int y = 0; y < height; ++y)
 		{
-			q[x][y] = new double* [sizeX];
 			for (int dx = 0; dx < sizeX; ++dx)
 			{
-				q[x][y][dx] = new double [sizeY];
 				for (int dy = 0; dy < sizeY; ++dy)
 				{
 					if ((x + K[dx][dy][0] >= 0) &&
@@ -324,38 +290,38 @@ int main()
 						(y + K[dx][dy][1] >= 0) &&
 						(y + K[dx][dy][1] < height))
 					{
-						q[x][y][dx][dy] = -abs(Lcolors[x][y] - Rcolors[x + K[dx][dy][0]][y + K[dx][dy][1]]);
+						q[get_index(x, y, dx, dy)] = -abs(Lcolors[x][y] - Rcolors[x + K[dx][dy][0]][y + K[dx][dy][1]]);
 					}
 					else
 					{
-						q[x][y][dx][dy] = -inf;
+						q[get_index(x, y, dx, dy)] = -inf;
 					}
 				}
 			}
 		}
 	}
 	cout << "Q" << endl;
-	const double alpha = 10;
-	double**** g = new double*** [sizeX];
+	const float alpha = 10;
+	float**** g = new float*** [sizeX];
 	for (int dx1 = 0; dx1 < sizeX; ++dx1)
 	{
-		g[dx1] = new double** [sizeY];
+		g[dx1] = new float** [sizeY];
 		for (int dy1 = 0; dy1 < sizeY; ++dy1)
 		{
-			g[dx1][dy1] = new double* [sizeX];
+			g[dx1][dy1] = new float* [sizeX];
 			for (int dx2 = 0; dx2 < sizeX; ++dx2)
 			{
-				g[dx1][dy1][dx2] = new double [sizeY];
+				g[dx1][dy1][dx2] = new float[sizeY];
 				for (int dy2 = 0; dy2 < sizeY; ++dy2)
 				{
 					g[dx1][dy1][dx2][dy2] = -alpha * sqrt(pow(K[dx1][dy1][0] - K[dx2][dy2][0], 2) +
-						                                  pow(K[dx1][dy1][1] - K[dx2][dy2][1], 2));
+						pow(K[dx1][dy1][1] - K[dx2][dy2][1], 2));
 				}
 			}
 		}
 	}
 	cout << "G" << endl;
-	int*** res = run(sizeX, sizeY, K, width, height, q, g);
+	int*** res = run(K, q, g);
 	cout << "Res" << endl;
 	Mat* result = new Mat[3];
 	for (int c = 0; c < 3; ++c)
